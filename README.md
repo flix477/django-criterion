@@ -14,7 +14,7 @@ It gives you visibility on your database queries and timings in your application
 ## Basic usage
 
 1. Add `django_criterion` to your INSTALLED_APPS setting like this:
-```
+```python
   INSTALLED_APPS = [
     ...
     'django_criterion'
@@ -22,7 +22,7 @@ It gives you visibility on your database queries and timings in your application
 ```
 
 2. Add benchmark cases in your project like this:
-```
+```python
 from django_criterion import BenchmarkCase
 
 
@@ -65,7 +65,7 @@ If you have a benchmark that does not modify the database, like a GraphQL query,
 
 You can decorate your benchmark as pure by doing this:
 
-```
+```python
 from django_criterion import BenchmarkCase, pure
 
 
