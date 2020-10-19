@@ -13,7 +13,11 @@ class TimingDiff:
     def result_type(self) -> ResultType:
         if self.negligible:
             return ResultType.UNCHANGED
-        return ResultType.REGRESSION if self.average_diff > 0 else ResultType.IMPROVEMENT
+        return (
+            ResultType.REGRESSION
+            if self.average_diff > 0
+            else ResultType.IMPROVEMENT
+        )
 
     def pretty(self) -> str:
         return f"{self.average_diff:+.4f}"
@@ -27,10 +31,19 @@ class Timing:
     diff: Optional[TimingDiff]
 
     def from_dict(d):
-        return Timing(average=d["average"], stdev=d["stdev"], variance=d["variance"], diff=None)
+        return Timing(
+            average=d["average"],
+            stdev=d["stdev"],
+            variance=d["variance"],
+            diff=None,
+        )
 
     def result_type(self) -> ResultType:
-        return ResultType.NO_PREVIOUS_DATA if self.diff is None else self.diff.result_type()
+        return (
+            ResultType.NO_PREVIOUS_DATA
+            if self.diff is None
+            else self.diff.result_type()
+        )
 
 
 F_TABLE_ALPHA = (0.01, 0.025, 0.05, 0.1)
@@ -74,7 +87,9 @@ def fcdf(f, freedom):
         up = i + 1
         if table[down] >= f >= table[up]:
             return linear_regression(
-                (table[down], F_TABLE_ALPHA[down]), (table[up], F_TABLE_ALPHA[up]), f
+                (table[down], F_TABLE_ALPHA[down]),
+                (table[up], F_TABLE_ALPHA[up]),
+                f,
             )
 
     raise Exception("Couldn't find an alpha value for F.")
@@ -115,15 +130,22 @@ def calc_timing_diff(new: Timing, old: Timing, n: int, a=0.05) -> TimingDiff:
         ap = 2 * fcdf(1 / f, n - 1)
 
     if ap >= 0.2:
-        sp = math.sqrt(((n - 1) * old.variance + (n - 1) * new.variance) / (2 * n - 2))
+        sp = math.sqrt(
+            ((n - 1) * old.variance + (n - 1) * new.variance) / (2 * n - 2)
+        )
         t = (old.average - new.average) / (sp * math.sqrt(2 / n))
         t_value = invt(a, n * 2 - 2)
     else:
         v = ((old.variance / n + new.variance / n) ** 2) / (
-            ((old.variance / n) ** 2) / (n - 1) + ((new.variance / n) ** 2) / (n - 1)
+            ((old.variance / n) ** 2) / (n - 1)
+            + ((new.variance / n) ** 2) / (n - 1)
         )
-        t = (old.average - new.average) / math.sqrt((old.variance / n) + (new.variance / n))
+        t = (old.average - new.average) / math.sqrt(
+            (old.variance / n) + (new.variance / n)
+        )
         t_value = invt(a / 2, v)
 
     reject = t >= t_value or t <= -t_value
-    return TimingDiff(average_diff=new.average - old.average, negligible=(not reject))
+    return TimingDiff(
+        average_diff=new.average - old.average, negligible=(not reject)
+    )

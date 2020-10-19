@@ -12,5 +12,13 @@ class Command(BaseCommand):
         parser.add_argument("-c", "--compare")
         parser.add_argument("-o", "--output")
 
-    def handle(self, *args, scripts=[], output=None, compare=None, show_queries=False, **options):
+    def handle(
+        self,
+        *args,
+        scripts=[],
+        output=None,
+        compare=None,
+        show_queries=False,
+        **options
+    ):
         run(scripts, output=output, compare=compare, show_queries=show_queries)

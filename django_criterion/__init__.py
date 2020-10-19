@@ -1,1 +1,1 @@
-from .core import BenchmarkCase, pure
+from .core import BenchmarkCase, pure  # noqa: F401

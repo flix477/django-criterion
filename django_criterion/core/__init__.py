@@ -30,7 +30,8 @@ class BenchmarkResult:
 
     def from_dict(d):
         return BenchmarkResult(
-            queries=Queries.from_dict(d["queries"]), timing=Timing.from_dict(d["timing"])
+            queries=Queries.from_dict(d["queries"]),
+            timing=Timing.from_dict(d["timing"]),
         )
 
     def result_type(self) -> ResultType:
@@ -44,8 +45,9 @@ class BenchmarkCase:
 
 def pure(f):
     """
-    BenchmarkCase that do not modify the database can be declared pure with this annotation. This will speed up the
-    test run by not flushing the database after the benchmark.
+    BenchmarkCase that do not modify the database can be declared pure
+    with this annotation. This will speed up the test run by not flushing
+    the database after the benchmark.
     """
     f.pure = True
     return f
@@ -75,13 +77,19 @@ def get_cases(scripts: List[str]):
     return cases
 
 
+def warmup_op(x: float, y: float) -> float:
+    return math.sqrt((x / (y ** 2)) * (x + y))
+
+
+def rand() -> float:
+    return random.random() * 1000 + 10000
+
+
 def warmup(for_seconds=10) -> None:
-    op = lambda x, y: math.sqrt((x / (y ** 2)) * (x + y))
-    rand = lambda: random.random() * 1000 + 10000
     t0 = datetime.now()
 
     while (datetime.now() - t0).seconds < for_seconds:
-        op(rand(), rand())
+        warmup_op(rand(), rand())
 
 
 def run_cases(cases, n: int) -> Dict[str, Dict[str, BenchmarkResult]]:
@@ -125,14 +133,19 @@ def run_bench(case, f, sample_size) -> BenchmarkResult:
 
     return BenchmarkResult(
         queries=Queries(
-            value=total / sample_size, captured_queries=captured_queries.captured_queries
+            value=total / sample_size,
+            captured_queries=captured_queries.captured_queries,
         ),
-        timing=Timing(average=average_time, stdev=stdev, variance=variance, diff=None),
+        timing=Timing(
+            average=average_time, stdev=stdev, variance=variance, diff=None
+        ),
     )
 
 
 def flush(connection) -> None:
-    sql_list = sql_flush(no_style(), connection, reset_sequences=True, allow_cascade=False)
+    sql_list = sql_flush(
+        no_style(), connection, reset_sequences=True, allow_cascade=False
+    )
     connection.ops.execute_sql_flush(settings.NAME, sql_list)
 
 
@@ -160,7 +173,9 @@ def load_results(f: TextIO) -> Dict[str, Dict[str, BenchmarkResult]]:
         sys.exit(1)
 
 
-def write_output(f: TextIO, data: Dict[str, Dict[str, BenchmarkResult]]) -> None:
+def write_output(
+    f: TextIO, data: Dict[str, Dict[str, BenchmarkResult]]
+) -> None:
     try:
         json.dump(
             {
@@ -179,7 +194,9 @@ def write_output(f: TextIO, data: Dict[str, Dict[str, BenchmarkResult]]) -> None
 
 
 def compare_results(
-    a: Dict[str, Dict[str, BenchmarkResult]], b: Dict[str, Dict[str, BenchmarkResult]], n: int
+    a: Dict[str, Dict[str, BenchmarkResult]],
+    b: Dict[str, Dict[str, BenchmarkResult]],
+    n: int,
 ) -> Dict[str, Dict[str, BenchmarkResult]]:
     comparison = {}
     for case, benchmarks in a.items():
@@ -207,12 +224,16 @@ def compare_results(
                 variance=result.timing.variance,
                 diff=timing_diff,
             )
-            comparison[case][bench_name] = BenchmarkResult(queries=queries, timing=timing)
+            comparison[case][bench_name] = BenchmarkResult(
+                queries=queries, timing=timing
+            )
 
     return comparison
 
 
-def print_results(results: Dict[str, Dict[str, BenchmarkResult]], show_queries=False) -> None:
+def print_results(
+    results: Dict[str, Dict[str, BenchmarkResult]], show_queries=False
+) -> None:
     print("Results:")
 
     for case, results in results.items():
@@ -224,7 +245,10 @@ def print_results(results: Dict[str, Dict[str, BenchmarkResult]], show_queries=F
             queries_result = queries.result_type().pretty_print()
             print(
                 " " * 4
-                + f"~ {'Number of queries'.ljust(28)}: {queries.value:.1f} ({queries_result if queries.diff is None else (queries.pretty_diff() + ', ' + queries_result)})"
+                + f"~ {'Number of queries'.ljust(28)}: {queries.value:.1f} ("
+                + queries_result
+                if queries.diff is None
+                else (queries.pretty_diff() + ", " + queries_result) + ")"
             )
 
             if show_queries:
@@ -237,11 +261,17 @@ def print_results(results: Dict[str, Dict[str, BenchmarkResult]], show_queries=F
             timing_result = timing.result_type().pretty_print()
             print(
                 " " * 4
-                + f"~ {'Timing (seconds)'.ljust(28)}: {timing.average:.4f}±{timing.stdev:.4f} ({timing_result if not timing.diff else timing.diff.pretty() + ', ' + timing_result})"
+                + f"~ {'Timing (seconds)'.ljust(28)}: "
+                + f"{timing.average:.4f}±{timing.stdev:.4f} ("
+                + timing_result
+                if not timing.diff
+                else timing.diff.pretty() + ", " + timing_result + ")"
             )
 
 
-def run(scripts, output=None, compare=None, show_queries=False, sample_size=61) -> None:
+def run(
+    scripts, output=None, compare=None, show_queries=False, sample_size=61
+) -> None:
     if not scripts:
         # TODO: autodiscover
         scripts = []

@@ -9,7 +9,9 @@ class ResultType(enum.Enum):
     NO_PREVIOUS_DATA = "no-previous-data"
 
     def merge(self, other) -> "ResultType":
-        if (self == ResultType.REGRESSION and other == ResultType.IMPROVEMENT) or (
+        if (
+            self == ResultType.REGRESSION and other == ResultType.IMPROVEMENT
+        ) or (
             self == ResultType.IMPROVEMENT and other == ResultType.REGRESSION
         ):
             return ResultType.MIXED
