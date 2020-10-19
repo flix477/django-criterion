@@ -1,6 +1,6 @@
 # django-criterion
 
-`django-criterion` is a Django admin command that allows you to benchmark Django code.
+`django-criterion` is a django-admin command that allows you to benchmark Django code.
 It gives you visibility on your database queries and timings in your application and on the impact of your modifications.
 
 
