@@ -122,10 +122,11 @@ def run_bench(case, f, sample_size) -> BenchmarkResult:
         timings.append(perf_counter() - start)
         total += len(queries.captured_queries)
 
-        if not is_pure:
-            flush(connection)
         if i == sample_size - 1:
-            captured_queries = queries
+            captured_queries = list(queries.captured_queries)
+        elif not is_pure:
+            flush(connection)
+        connection.queries_log.clear()
 
     average_time = statistics.mean(timings)
     stdev = statistics.stdev(timings)
@@ -134,7 +135,7 @@ def run_bench(case, f, sample_size) -> BenchmarkResult:
     return BenchmarkResult(
         queries=Queries(
             value=total / sample_size,
-            captured_queries=captured_queries.captured_queries,
+            captured_queries=captured_queries,
         ),
         timing=Timing(
             average=average_time, stdev=stdev, variance=variance, diff=None
@@ -146,7 +147,7 @@ def flush(connection) -> None:
     sql_list = sql_flush(
         no_style(), connection, reset_sequences=True, allow_cascade=False
     )
-    connection.ops.execute_sql_flush(settings.NAME, sql_list)
+    connection.ops.execute_sql_flush(DEFAULT_DB_ALIAS, sql_list)
 
 
 def qualified_name(c) -> str:
@@ -246,9 +247,12 @@ def print_results(
             print(
                 " " * 4
                 + f"~ {'Number of queries'.ljust(28)}: {queries.value:.1f} ("
-                + queries_result
-                if queries.diff is None
-                else (queries.pretty_diff() + ", " + queries_result) + ")"
+                + (
+                    queries_result
+                    if queries.diff is None
+                    else (queries.pretty_diff() + ", " + queries_result)
+                )
+                + ")"
             )
 
             if show_queries:
@@ -263,9 +267,12 @@ def print_results(
                 " " * 4
                 + f"~ {'Timing (seconds)'.ljust(28)}: "
                 + f"{timing.average:.4f}±{timing.stdev:.4f} ("
-                + timing_result
-                if not timing.diff
-                else timing.diff.pretty() + ", " + timing_result + ")"
+                + (
+                    timing_result
+                    if not timing.diff
+                    else (timing.diff.pretty() + ", " + timing_result)
+                )
+                + ")"
             )
 
 
